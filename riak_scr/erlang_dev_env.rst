@@ -193,3 +193,43 @@ init.el には次のように設定を追加します。::
    anything-exuberant-ctags.el というのもあるので、そちらを使うことも可能。
    自分は使ったことないですけど。
 
+
+シェル補完
+==========
+
+bash-completion:
+
+  http://bash-completion.alioth.debian.org/
+
+zsh-completion:
+
+  https://github.com/zsh-users/zsh-completions
+
+
+補完スクリプトを追加で動作させるための設定
+------------------------------------------
+::
+
+    ## .zshrc の先頭の方に以下を追記
+    fpath=(path/to/zsh-completions/src $fpath)
+
+    autoload -U compinit && compinit
+
+例:
+
+https://github.com/shkumagai/dotfiles/blob/develop/zshrc#L7
+
+
+おすすめしたい Erlang 関連の補完スクリプト
+------------------------------------------
+
+rebar
+~~~~~
+
+https://github.com/rebar/rebar/tree/master/priv/shell-completion -- bash,zsh
+
+
+riak
+~~~~
+
+https://github.com/shkumagai/my-zsh-completions/blob/master/src/_riak -- zsh

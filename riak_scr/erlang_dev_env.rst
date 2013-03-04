@@ -100,13 +100,13 @@ Requirements ::
 インストール手順
 ~~~~~~~~~~~~~~~~
 
-参考として、R16A のインストール手順を次に示します。
+参考として、R16B のインストール手順を次に示します。
 
 ::
 
     ## ダウンロード & 展開
-    $ VERSION="R16A"
-    $ curl -o otp_src_${VERSION}.tar.gz http://www.erlang.org/download/otp_src_R16A_RELEASE_CANDIDATE.tar.gz
+    $ VERSION="R16B"
+    $ curl -O http://www.erlang.org/download/otp_src_${VERSION}.tar.gz
     $ tar zxf otp_src_${VERSION}.tar.gz
 
     ## configure

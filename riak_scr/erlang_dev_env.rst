@@ -26,8 +26,8 @@ OS は？
 インストール方法は？
 --------------------
 
-- もちろん バイナリインストール
-- 漢は黙って ソース から
+- お手軽な バイナリインストール
+- もちろん ソース から
 - よく分からない
 
 
@@ -119,6 +119,11 @@ Requirements ::
     $ make
     $ make install
 
+Erlang/OTP Japan Mirror by Basho::
+
+    http://download.basho.co.jp.try-cs.ycloud.jp/index.html
+
+R16B は無かった...
 
 Git リポジトリからインストール
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

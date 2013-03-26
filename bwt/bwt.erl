@@ -6,15 +6,16 @@
          bwtrans_decode/1]).
 
 -define(UCHAR_MAX, 16#100).
+-define(STOP_CHAR, $$).
 
 -spec bwtrans_encode(binary()) -> binary().
 bwtrans_encode(String) ->
-    [binary:last(X) || X <- circulant_matrix(<<String/binary, $$>>)].
+    list_to_binary([binary:last(X) || X <- circulant_matrix(<<String/binary, ?STOP_CHAR>>)]).
 
 -spec bwtrans_decode(binary()) -> binary().
 bwtrans_decode(BWString) ->
     {Pos, Count} = counting_sort(BWString),
-    lfmapping(BWString, Pos, Count).
+    list_to_binary(lfmapping(BWString, Pos, Count)).
 
 %% ============================================================
 %% internal function
@@ -30,11 +31,20 @@ circulant_matrix0(<<H:1/binary, T/binary>> = Bin, [], Length) ->
 circulant_matrix0(<<H:1/binary, T/binary>> = Bin, Acc, Length) ->
     circulant_matrix0(<<T/binary, H/binary>>, [Bin|Acc], Length - 1).
 
+
+list_update([], _, _, Acc) ->
+    lists:reverse(Acc);
+list_update([H|T], I, O, Acc) when I == length(Acc) ->
+    list_update(T, I, O, [H + O|Acc]);
+list_update([H|T], I, O, Acc) ->
+    list_update(T, I, O, [H|Acc]).
+
+
 counting_sort(Bin) ->
     Blank = [0 || _ <- lists:seq(0, ?UCHAR_MAX)],
     case counting_sort0(Bin, Blank, -1, byte_size(Bin)) of
         {Pos, Count0} ->
-            case counting_sort1(Count0, 0) of
+            case counting_sort1(0, Count0, []) of
                 Count ->
                     {Pos, Count}
             end
@@ -43,59 +53,38 @@ counting_sort(Bin) ->
 counting_sort0(<<>>, Count, Pos, _Length) ->
     {Pos, Count};
 counting_sort0(Bin, Count, Pos, Length) ->
-    Size = byte_size(Bin) - 1,
+    Size = size(Bin) - 1,
     <<C, Rest:Size/binary>> = Bin,
-    {Prefix, [Nth|Suffix]} = lists:split(C, Count),
     case C of
-        $$ ->
+        ?STOP_CHAR ->
             Idx = Length - Size,
-            counting_sort0(Rest, Prefix ++ [Nth + 1] ++ Suffix, Idx, Length);
+            counting_sort0(Rest, list_update(Count, C, 1, []), Idx, Length);
         _ ->
-            counting_sort0(Rest, Prefix ++ [Nth + 1] ++ Suffix, Pos, Length)
+            counting_sort0(Rest, list_update(Count, C, 1, []), Pos, Length)
     end.
 
-counting_sort1(Count, Pos) when Pos =:= length(Count) ->
-    Count;
-counting_sort1(Count, Pos) ->
-    case lists:split(Pos, Count) of
-        {[], [Nth|Suffix]} ->
-            counting_sort1([Nth] ++ Suffix, Pos + 1);
-        {Prefix, [Nth|Suffix]} ->
-            counting_sort1(Prefix ++ [lists:last(Prefix) + Nth] ++ Suffix, Pos + 1)
-    end.
+counting_sort1(_, [], Acc) ->
+    lists:reverse(Acc);
+counting_sort1(Last, [Head|Tail], Acc) ->
+    counting_sort1(Head + Last, Tail, [Last + Head|Acc]).
+
 
 lfmapping(Bin, Pos, Count) ->
-    case lfmapping0(Count,
-                    binary_to_list(Bin),
-                    byte_size(Bin),
-                    [0 || _ <- lists:seq(0, byte_size(Bin) - 1)]) of
+    LFMapping = [0 || _ <- lists:seq(1, byte_size(Bin))],
+    case lfmapping0(Count, binary_to_list(Bin), byte_size(Bin), LFMapping) of
         List ->
-            lfmapping2(binary_to_list(Bin), List, Pos, [])
+            lfmapping1(binary_to_list(Bin), List, Pos, [])
     end.
 
 lfmapping0(_Count, _ListOfBin, Pos, Acc) when Pos =< 0 ->
     Acc;
 lfmapping0(Count, ListOfBin, Pos, Acc) ->
     Ord = lists:nth(Pos, ListOfBin),
-    case lists:split(Ord, Count) of
-        {[], [Idx|Suffix]} ->
-            case lists:split(Idx - 1, Acc) of
-                {[], [_|Suf]} ->
-                    lfmapping0([Idx - 1] ++ Suffix, ListOfBin, Pos - 1, [Pos] ++ Suf);
-                {Pre, [_|Suf]} ->
-                    lfmapping0([Idx - 1] ++ Suffix, ListOfBin, Pos - 1, Pre ++ [Pos] ++ Suf)
-            end;
-        {Prefix, [Idx|Suffix]} ->
-            case lists:split(Idx - 1, Acc) of
-                {[], [_|Suf]} ->
-                    lfmapping0(Prefix ++ [Idx - 1] ++ Suffix, ListOfBin, Pos - 1, [Pos] ++ Suf);
-                {Pre, [_|Suf]} ->
-                    lfmapping0(Prefix ++ [Idx - 1] ++ Suffix, ListOfBin, Pos - 1, Pre ++ [Pos] ++ Suf)
-            end
-    end.
+    Idx = lists:nth(Ord+1, Count),
+    lfmapping0(list_update(Count, Ord, -1, []), ListOfBin, Pos-1, list_update(Acc, Idx-1, Pos, [])).
 
-lfmapping2(ListOfBin, _LfMap, _Pos, Acc) when length(ListOfBin) =:= length(Acc) ->
-    lists:reverse(Acc);
-lfmapping2(ListOfBin, LfMap, Pos, Acc) ->
-    NewPos = lists:nth(Pos, LfMap),
-    lfmapping2(ListOfBin, LfMap, NewPos, [lists:nth(NewPos, ListOfBin)|Acc]).
+lfmapping1(ListOfBin, _, _, [_|Tail] = Acc) when length(ListOfBin) =:= length(Acc) ->
+    lists:reverse(Tail);
+lfmapping1(ListOfBin, LFMapping, Pos, Acc) ->
+    NewPos = lists:nth(Pos, LFMapping),
+    lfmapping1(ListOfBin, LFMapping, NewPos, [lists:nth(NewPos, ListOfBin)|Acc]).

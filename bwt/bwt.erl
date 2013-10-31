@@ -2,18 +2,18 @@
 
 -author("take.this.2.your.grave@gmail.com").
 
--export([bwtrans_encode/1,
-         bwtrans_decode/1]).
+-export([encode/1,
+         decode/1]).
 
 -define(UCHAR_MAX, 16#100).
--define(STOP_CHAR, $$).
+-define(STOP_CHAR, $\0).
 
--spec bwtrans_encode(binary()) -> binary().
-bwtrans_encode(String) ->
+-spec encode(binary()) -> binary().
+encode(String) ->
     list_to_binary([binary:last(X) || X <- circulant_matrix(<<String/binary, ?STOP_CHAR>>)]).
 
--spec bwtrans_decode(binary()) -> binary().
-bwtrans_decode(BWString) ->
+-spec decode(binary()) -> binary().
+decode(BWString) ->
     {Pos, Count} = counting_sort(BWString),
     list_to_binary(lfmapping(BWString, Pos, Count)).
 
